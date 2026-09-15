@@ -152,9 +152,15 @@ export default function MarketplaceScreen() {
   }
 
   async function clearCart() {
-    // TODO 9:
-    // Call clearSavedCart(), then setCartItems([]).
+  setStorageError('');
+
+  try {
+    await clearSavedCart();
+    setCartItems([]);
+  } catch (error) {
+    setStorageError('Unable to clear your cart.');
   }
+}
 
   const totalItems = cartItems.reduce(
     (sum, item) => sum + item.quantity,
