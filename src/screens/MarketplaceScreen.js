@@ -14,7 +14,11 @@ import ProductRow from '../components/ProductRow';
 import CartRow from '../components/CartRow';
 import CartSummary from '../components/CartSummary';
 import { products } from '../data/products';
-import { clearSavedCart, loadCart, saveCart } from '../services/cartStorage';
+import {
+  clearSavedCart,
+  loadCart,
+  saveCart,
+} from '../services/cartStorage';
 
 export default function MarketplaceScreen() {
   const [search, setSearch] = useState('');
@@ -43,56 +47,108 @@ export default function MarketplaceScreen() {
   }, []);
 
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(search.trim().toLowerCase())
+    product.name
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
   );
 
+  // Add a product or increase its quantity if it already exists.
   async function addToCart(product) {
-  setStorageError('');
+    setStorageError('');
 
-  try {
-    const existingItem = cartItems.find(
-      (item) => item.id === product.id
-    );
+    try {
+      const existingItem = cartItems.find(
+        (item) => item.id === product.id
+      );
 
-    let updatedCart;
+      let updatedCart;
 
-    if (existingItem) {
-      updatedCart = cartItems.map((item) =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
+      if (existingItem) {
+        updatedCart = cartItems.map((item) =>
+          item.id === product.id
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
+            : item
+        );
+      } else {
+        updatedCart = [
+          ...cartItems,
+          {
+            ...product,
+            quantity: 1,
+          },
+        ];
+      }
+
+      setCartItems(updatedCart);
+      await saveCart(updatedCart);
+    } catch (error) {
+      setStorageError('Unable to save your cart.');
+    }
+  }
+
+  // Increase the quantity of the matching product.
+  async function increaseQuantity(productId) {
+    setStorageError('');
+
+    try {
+      const updatedCart = cartItems.map((item) =>
+        item.id === productId
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+            }
           : item
       );
-    } else {
-      updatedCart = [
-        ...cartItems,
-        { ...product, quantity: 1 },
-      ];
+
+      setCartItems(updatedCart);
+      await saveCart(updatedCart);
+    } catch (error) {
+      setStorageError('Unable to update your cart.');
     }
-
-    setCartItems(updatedCart);
-    await saveCart(updatedCart);
-  } catch (error) {
-    setStorageError('Unable to save your cart.');
-  }
-}
-
-  async function increaseQuantity(productId) {
-    // TODO 6:
-    // Increase only the matching item's quantity.
-    // Update state and save the same updated array.
   }
 
+  // Decrease quantity and remove the product if it reaches zero.
   async function decreaseQuantity(productId) {
-    // TODO 7:
-    // If quantity is greater than 1, decrease it.
-    // If quantity would become 0, remove the item.
-    // Update state and storage.
+    setStorageError('');
+
+    try {
+      const updatedCart = cartItems
+        .map((item) =>
+          item.id === productId
+            ? {
+                ...item,
+                quantity: item.quantity - 1,
+              }
+            : item
+        )
+        .filter((item) => item.quantity > 0);
+
+      setCartItems(updatedCart);
+      await saveCart(updatedCart);
+    } catch (error) {
+      setStorageError('Unable to update your cart.');
+    }
   }
 
+  // Remove only the selected product.
   async function removeFromCart(productId) {
-    // TODO 8:
-    // Use filter() to remove the matching id.
-    // Update state and storage.
+    setStorageError('');
+
+    try {
+      const updatedCart = cartItems.filter(
+        (item) => item.id !== productId
+      );
+
+      setCartItems(updatedCart);
+      await saveCart(updatedCart);
+    } catch (error) {
+      setStorageError(
+        'Unable to remove the product from your cart.'
+      );
+    }
   }
 
   async function clearCart() {
@@ -114,7 +170,11 @@ export default function MarketplaceScreen() {
     return (
       <View style={styles.centerState}>
         <ActivityIndicator size="large" />
-        <Text style={styles.stateTitle}>Loading your saved cart...</Text>
+
+        <Text style={styles.stateTitle}>
+          Loading your saved cart...
+        </Text>
+
         <Text style={styles.stateText}>
           Northstar is restoring local data.
         </Text>
@@ -195,14 +255,16 @@ export default function MarketplaceScreen() {
               </Text>
 
               <Text style={styles.subheading}>
-                A clean, current marketplace layout with compact
-                product rows and fast cart actions.
+                A clean, current marketplace layout with
+                compact product rows and fast cart actions.
               </Text>
             </View>
           }
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.cartContent}>
+        <ScrollView
+          contentContainerStyle={styles.cartContent}
+        >
           <Text style={styles.cartHeading}>
             Your cart
           </Text>
@@ -214,8 +276,8 @@ export default function MarketplaceScreen() {
               </Text>
 
               <Text style={styles.emptyText}>
-                Add a product from the Shop tab, then refresh
-                the app to prove persistence works.
+                Add a product from the Shop tab, then
+                refresh the app to prove persistence works.
               </Text>
             </View>
           ) : (
